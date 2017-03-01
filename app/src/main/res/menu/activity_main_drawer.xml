@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@mipmap/ic_home"
+            android:title="HomePage" />
+        <item
+            android:id="@+id/nav_camera"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="View Camera" />
+        <item
+            android:id="@+id/nav_locate"
+            android:icon="@mipmap/ic_map"
+            android:title="Locate Device" />
+        <item
+            android:id="@+id/nav_device"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="View Device Details" />
+
+        <item
+            android:id="@+id/nav_lock"
+            android:icon="@mipmap/ic_lock"
+            android:title="Lock Device" />
+        <item
+            android:id="@+id/nav_reset"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="Master Reset Device" />
+    </group>
+
+    <item android:title="More">
+        <menu>
+    <item
+        android:id="@+id/nav_remote"
+        android:title="Remote Control">
+    </item>
+            <item
+                android:id="@+id/nav_help"
+                android:title="Help Page">
+            </item>
+        </menu>
+    </item>
+
+</menu>

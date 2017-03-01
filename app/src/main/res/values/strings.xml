@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Android Anti-Theft</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+
+    <string name="enable_device_admin">Enable Device Admin</string>
+    <string name="lock_device">Lock Device</string>
+    <string name="reset_device">Reset Device</string>
+    <string name="send_to_app_folder">Send File</string>
+    <string name="device_admin_enabled">Device Admin Enabled</string>
+    <string name="device_admin_disabled">Device Admin Disabled</string>
+    <string name="button_enable_google_drive">Allow Google Drive to Access this Device</string>
+    <string name="btnIntendS">Take Small Picture</string>
+    <string name="cannot">Cannot</string>
+    <string name="album_name">CameraSample</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="copyright_message">Android Anti-Theft beta brought to you by Andrew Hall.</string>
+</resources>
