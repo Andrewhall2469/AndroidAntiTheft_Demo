@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.app.androidantitheftv2.R;
@@ -19,8 +20,12 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveApi;
+import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveFolder;
+import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.MetadataChangeSet;
+import com.google.android.gms.drive.events.ChangeEvent;
+import com.google.android.gms.drive.events.ChangeListener;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -33,8 +38,8 @@ public class RemoteControl extends Fragment implements
     protected static final int REQUEST_CODE_RESOLUTION = 1;
     private static final String TAG = "BaseDriveActivity";
     Button driveButton;
-
-
+    private TextView mLogTextView;
+    DriveId Id;
     public RemoteControl() {
         // Required empty public constructor
     }
@@ -48,7 +53,7 @@ public class RemoteControl extends Fragment implements
 
         driveButton = (Button) v.findViewById(R.id.driveButton);
         driveButton.setOnClickListener(this);
-
+        mLogTextView = (TextView) v.findViewById(R.id.textViewLog);
         return v;
     }
     @Override
@@ -134,7 +139,7 @@ public class RemoteControl extends Fragment implements
                     }
 
                     MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                            .setTitle("appconfig.txt")
+                            .setTitle("newfile.txt")
                             .setMimeType("text/plain")
                             .build();
                     Drive.DriveApi.getAppFolder(getGoogleApiClient())
@@ -152,9 +157,24 @@ public class RemoteControl extends Fragment implements
                         showMessage("Error while trying to create the file");
                         return;
                     }
+                    Log.d(TAG, "DriveId: " + result.getDriveFile().getDriveId());
                     showMessage("Created a file in App Folder: "
                             + result.getDriveFile().getDriveId());
+                    Id = result.getDriveFile().getDriveId();
+                    DriveFile file = Id.asDriveFile();
+                            file.addChangeListener(getGoogleApiClient(), changeListener);
+
                 }
             };
+
+    final private ChangeListener changeListener = new ChangeListener() {
+        @Override
+        public void onChange(ChangeEvent event) {
+            mLogTextView.setText(String.format("File change event: %s", event));
+            showMessage("AppDataFile Changed.....");
+        }
+    };
+
+
 }
 
