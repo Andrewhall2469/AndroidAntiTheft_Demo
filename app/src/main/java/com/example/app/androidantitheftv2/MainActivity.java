@@ -29,7 +29,6 @@ public class MainActivity extends AppCompatActivity
         OnMapReadyCallback {
     SupportMapFragment sMapFragment;
     DrawerLayout drawer;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

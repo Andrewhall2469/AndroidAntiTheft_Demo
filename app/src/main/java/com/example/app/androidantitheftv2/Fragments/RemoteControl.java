@@ -31,7 +31,6 @@ import static android.app.Activity.RESULT_OK;
 
 public class RemoteControl extends Fragment implements
         GoogleApiClient.ConnectionCallbacks,
-        View.OnClickListener,
         GoogleApiClient.OnConnectionFailedListener {
 
     GoogleApiClient mGoogleApiClient;
@@ -40,6 +39,7 @@ public class RemoteControl extends Fragment implements
     Button driveButton;
     private TextView mLogTextView;
     DriveId Id;
+
     public RemoteControl() {
         // Required empty public constructor
     }
@@ -52,7 +52,6 @@ public class RemoteControl extends Fragment implements
         View v = inflater.inflate(R.layout.fragment_remote_control, container, false);
 
         driveButton = (Button) v.findViewById(R.id.driveButton);
-        driveButton.setOnClickListener(this);
         mLogTextView = (TextView) v.findViewById(R.id.textViewLog);
         return v;
     }
@@ -67,6 +66,9 @@ public class RemoteControl extends Fragment implements
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .build();
+            Drive.DriveApi.newDriveContents(getGoogleApiClient())
+                    .setResultCallback(driveContentsCallback);
+
         }
         mGoogleApiClient.connect();
     }
@@ -91,8 +93,10 @@ public class RemoteControl extends Fragment implements
     @Override
     public void onConnected(Bundle connectionHint) {
         Log.i(TAG, "GoogleApiClient connected");
-    }
+        Drive.DriveApi.newDriveContents(getGoogleApiClient())
+                .setResultCallback(driveContentsCallback);
 
+    }
 
 
     @Override
@@ -123,11 +127,6 @@ public class RemoteControl extends Fragment implements
         return mGoogleApiClient;
     }
 
-    @Override
-    public void onClick(View v) {
-        Drive.DriveApi.newDriveContents(getGoogleApiClient())
-                .setResultCallback(driveContentsCallback);
-    }
     // [START drive_contents_callback]
     final private ResultCallback<DriveApi.DriveContentsResult> driveContentsCallback =
             new ResultCallback<DriveApi.DriveContentsResult>() {
@@ -139,7 +138,7 @@ public class RemoteControl extends Fragment implements
                     }
 
                     MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                            .setTitle("newfile.txt")
+                            .setTitle("newfilee.txt")
                             .setMimeType("text/plain")
                             .build();
                     Drive.DriveApi.getAppFolder(getGoogleApiClient())
@@ -162,8 +161,7 @@ public class RemoteControl extends Fragment implements
                             + result.getDriveFile().getDriveId());
                     Id = result.getDriveFile().getDriveId();
                     DriveFile file = Id.asDriveFile();
-                            file.addChangeListener(getGoogleApiClient(), changeListener);
-
+                    file.addChangeListener(getGoogleApiClient(), changeListener);
                 }
             };
 
@@ -174,7 +172,5 @@ public class RemoteControl extends Fragment implements
             showMessage("AppDataFile Changed.....");
         }
     };
-
-
 }
 
