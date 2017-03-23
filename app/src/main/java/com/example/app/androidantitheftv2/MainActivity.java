@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity
         OnMapReadyCallback {
     SupportMapFragment sMapFragment;
     DrawerLayout drawer;
+    private static final String TAG = "BaseDriveActivity";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,7 +57,6 @@ public class MainActivity extends AppCompatActivity
             fragmentTransaction.replace(R.id.content_frame, mainFragment);
             fragmentTransaction.commit();
         }
-        sMapFragment.getMapAsync(this);
     }
 
 

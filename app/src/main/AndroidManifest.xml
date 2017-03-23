@@ -49,6 +49,12 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
 
+            <service android:name=".MyDriveEventService" android:exported="true">
+                <intent-filter>
+                    <action android:name="com.google.android.gms.drive.events.HANDLE_EVENT"/>
+                </intent-filter>
+            </service>
+
             <!-- Required to make the receiver become device admin component -->
             <meta-data
                 android:name="android.app.device_admin"

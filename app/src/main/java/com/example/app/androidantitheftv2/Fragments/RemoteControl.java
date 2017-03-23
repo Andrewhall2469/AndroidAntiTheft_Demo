@@ -10,20 +10,22 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.app.androidantitheftv2.R;
+import com.example.app.androidantitheftv2.ResultsAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveApi;
-import com.google.android.gms.drive.DriveFile;
 import com.google.android.gms.drive.DriveFolder;
 import com.google.android.gms.drive.DriveId;
-import com.google.android.gms.drive.MetadataChangeSet;
+import com.google.android.gms.drive.DriveResource;
+import com.google.android.gms.drive.Metadata;
 import com.google.android.gms.drive.events.ChangeEvent;
 import com.google.android.gms.drive.events.ChangeListener;
 
@@ -39,6 +41,10 @@ public class RemoteControl extends Fragment implements
     Button driveButton;
     private TextView mLogTextView;
     DriveId Id;
+    DriveId driveId;
+    private String title;
+    private ListView mResultsListView;
+    private ResultsAdapter mResultsAdapter;
 
     public RemoteControl() {
         // Required empty public constructor
@@ -53,6 +59,9 @@ public class RemoteControl extends Fragment implements
 
         driveButton = (Button) v.findViewById(R.id.driveButton);
         mLogTextView = (TextView) v.findViewById(R.id.textViewLog);
+        mResultsListView = (ListView) v.findViewById(R.id.listViewResults);
+        mResultsAdapter = new ResultsAdapter(super.getActivity());
+        mResultsListView.setAdapter(mResultsAdapter);
         return v;
     }
     @Override
@@ -66,8 +75,7 @@ public class RemoteControl extends Fragment implements
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .build();
-            Drive.DriveApi.newDriveContents(getGoogleApiClient())
-                    .setResultCallback(driveContentsCallback);
+
 
         }
         mGoogleApiClient.connect();
@@ -93,11 +101,10 @@ public class RemoteControl extends Fragment implements
     @Override
     public void onConnected(Bundle connectionHint) {
         Log.i(TAG, "GoogleApiClient connected");
+        //Id = Drive.DriveApi.getAppFolder(mGoogleApiClient).getDriveId();
         Drive.DriveApi.newDriveContents(getGoogleApiClient())
                 .setResultCallback(driveContentsCallback);
-
     }
-
 
     @Override
     public void onConnectionSuspended(int cause) {
@@ -133,44 +140,58 @@ public class RemoteControl extends Fragment implements
                 @Override
                 public void onResult(DriveApi.DriveContentsResult result) {
                     if (!result.getStatus().isSuccess()) {
-                        showMessage("Error while trying to create new file contents");
+                        showMessage("Error while trying to retrieve contents");
                         return;
                     }
+                    Id = Drive.DriveApi.getAppFolder(mGoogleApiClient).getDriveId();
+                    DriveFolder folder = Id.asDriveFolder();
+                    folder.listChildren(getGoogleApiClient())
+                            .setResultCallback(metadataResult);
 
-                    MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                            .setTitle("newfilee.txt")
-                            .setMimeType("text/plain")
-                            .build();
                     Drive.DriveApi.getAppFolder(getGoogleApiClient())
-                            .createFile(getGoogleApiClient(), changeSet, result.getDriveContents())
-                            .setResultCallback(fileCallback);
+                            .getMetadata(getGoogleApiClient())
+                            .setResultCallback(metadataCallback);
                 }
             };
     // [END drive_contents_callback]
-
-    final private ResultCallback<DriveFolder.DriveFileResult> fileCallback = new
-            ResultCallback<DriveFolder.DriveFileResult>() {
+    final private ResultCallback<DriveApi.MetadataBufferResult> metadataResult = new
+            ResultCallback<DriveApi.MetadataBufferResult>() {
                 @Override
-                public void onResult(DriveFolder.DriveFileResult result) {
-                    if (!result.getStatus().isSuccess()) {
-                        showMessage("Error while trying to create the file");
-                        return;
-                    }
-                    Log.d(TAG, "DriveId: " + result.getDriveFile().getDriveId());
-                    showMessage("Created a file in App Folder: "
-                            + result.getDriveFile().getDriveId());
-                    Id = result.getDriveFile().getDriveId();
-                    DriveFile file = Id.asDriveFile();
-                    file.addChangeListener(getGoogleApiClient(), changeListener);
+                public void onResult(DriveApi.MetadataBufferResult result) {
+              if (!result.getStatus().isSuccess()){
+                  showMessage("No Files Available");
+                  return;
+              }
+                    mResultsAdapter.clear();
+                    mResultsAdapter.append(result.getMetadataBuffer());
                 }
             };
 
-    final private ChangeListener changeListener = new ChangeListener() {
+    final private ResultCallback<DriveResource.MetadataResult> metadataCallback = new
+            ResultCallback<DriveResource.MetadataResult>() {
+                @Override
+                public void onResult(DriveResource.MetadataResult result) {
+                    if (!result.getStatus().isSuccess()) {
+                        showMessage("Problem while trying to fetch metadata");
+                        return;
+                    }
+                    Metadata metadata = result.getMetadata();
+                    showMessage("Metadata successfully fetched. Title: "
+                            + metadata.getTitle());
+                    Log.d(TAG, metadata.toString());
+                    Id = result.getMetadata().getDriveId();
+                    DriveFolder folder = Id.asDriveFolder();
+                    folder.addChangeListener(getGoogleApiClient(), changeListener);
+                }
+            };
+   final private ChangeListener changeListener = new ChangeListener() {
         @Override
         public void onChange(ChangeEvent event) {
-            mLogTextView.setText(String.format("File change event: %s", event));
+            //mLogTextView.setText(String.format("File change event: %s", event));
             showMessage("AppDataFile Changed.....");
+            Log.d(TAG, event.toString());
         }
     };
+
 }
 
