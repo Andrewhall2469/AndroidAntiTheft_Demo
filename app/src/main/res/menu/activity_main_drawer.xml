@@ -26,7 +26,7 @@
         <item
             android:id="@+id/nav_reset"
             android:icon="@drawable/ic_menu_manage"
-            android:title="Master Reset Device" />
+            android:title="@string/master_reset_device" />
     </group>
 
     <item android:title="More">

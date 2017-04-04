@@ -53,9 +53,9 @@ public class ResetFragment extends Fragment implements View.OnClickListener {
         switch (v.getId()) {
         case R.id.button_reset_device:
         // We reset the device - this will erase entire /data partition!
-        Toast.makeText(super.getActivity(), "Locking device...", Toast.LENGTH_LONG).show();
+        Toast.makeText(super.getActivity(), "MASTER RESET ACTIVATED", Toast.LENGTH_LONG).show();
         Log.d(TAG,
-                "RESETing device now - all user data will be ERASED to factory settings");
+                "RESETTING device now - all user data will be ERASED to factory settings");
         devicePolicyManager.wipeData(ACTIVATION_REQUEST);
         break;
     }
