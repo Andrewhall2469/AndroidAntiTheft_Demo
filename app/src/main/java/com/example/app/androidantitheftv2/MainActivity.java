@@ -7,12 +7,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentTransaction;
@@ -30,10 +33,18 @@ import com.example.app.androidantitheftv2.Fragments.CameraFragment;
 import com.example.app.androidantitheftv2.Fragments.DeviceDetails;
 import com.example.app.androidantitheftv2.Fragments.LockFragment;
 import com.example.app.androidantitheftv2.Fragments.MainFragment;
-import com.example.app.androidantitheftv2.Fragments.ResetFragment;
 import com.example.app.androidantitheftv2.Fragments.RemoteControl;
+import com.example.app.androidantitheftv2.Fragments.ResetFragment;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.drive.Drive;
+import com.google.android.gms.drive.DriveApi.DriveContentsResult;
+import com.google.android.gms.drive.DriveContents;
+import com.google.android.gms.drive.DriveFolder;
+import com.google.android.gms.drive.MetadataChangeSet;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -50,6 +61,9 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,21 +75,34 @@ import static android.content.ContentValues.TAG;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
-        OnMapReadyCallback, EasyPermissions.PermissionCallbacks {
+        OnMapReadyCallback, EasyPermissions.PermissionCallbacks,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener{
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
     private static final String PREF_ACCOUNT_NAME = "accountName";
-    private static final String[] SCOPES = { DriveScopes.DRIVE_APPDATA };
+    private static final String[] SCOPES = {DriveScopes.DRIVE_APPDATA};
     static final int ACTIVATION_REQUEST = 47; // identifies our request id
+
+    protected GoogleApiClient mGoogleApiClient;
+
+    /**
+     * Represents a geographical location.
+     */
+    protected Location mLastLocation;
+
+    protected String mLatitudeLabel;
+    protected String mLongitudeLabel;
 
     GoogleAccountCredential mCredential;
     SupportMapFragment sMapFragment;
     DrawerLayout drawer;
     DevicePolicyManager devicePolicyManager;
     Handler mHandler;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,22 +142,36 @@ public class MainActivity extends AppCompatActivity
 
         getResultsFromApi();
 
+        buildGoogleApiClient();
+
         this.mHandler = new Handler();
 
-        this.mHandler.postDelayed(m_Runnable, 60000);
+        this.mHandler.postDelayed(m_Runnable, 10000);
 
 
     }
 
-    private final Runnable m_Runnable = new Runnable()
-    {
-        public void run()
-        {
+
+    private final Runnable m_Runnable = new Runnable() {
+        public void run() {
             getResultsFromApi();
-            MainActivity.this.mHandler.postDelayed(m_Runnable, 60000);
+            MainActivity.this.mHandler.postDelayed(m_Runnable, 10000);
         }
     };
 
+
+    /**
+     * Builds a GoogleApiClient. Uses the addApi() method to request the LocationServices API.
+     */
+    protected synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .addApi(Drive.API)
+                .addScope(Drive.SCOPE_FILE)
+                .build();
+    }
 
     /**
      * Attempt to call the API, after verifying that all the preconditions are
@@ -140,11 +181,11 @@ public class MainActivity extends AppCompatActivity
      * appropriate.
      */
     private void getResultsFromApi() {
-        if (! isGooglePlayServicesAvailable()) {
+        if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
         } else if (mCredential.getSelectedAccountName() == null) {
             chooseAccount();
-        } else if (! isDeviceOnline()) {
+        } else if (!isDeviceOnline()) {
             Log.d(TAG, "No network connection available.");
         } else {
             new MakeRequestTask(mCredential).execute();
@@ -186,6 +227,21 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (mGoogleApiClient.isConnected()) {
+            mGoogleApiClient.disconnect();
+        }
+    }
+
+
     /**
      * Called when an activity launched here (specifically, AccountPicker
      * and authorization) exits, giving you the requestCode you started it with,
@@ -200,7 +256,7 @@ public class MainActivity extends AppCompatActivity
     protected void onActivityResult(
             int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        switch(requestCode) {
+        switch (requestCode) {
             case REQUEST_GOOGLE_PLAY_SERVICES:
                 if (resultCode != RESULT_OK) {
                     Log.d(TAG,
@@ -330,6 +386,139 @@ public class MainActivity extends AppCompatActivity
         dialog.show();
     }
 
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+    }
+
+    final private ResultCallback<DriveContentsResult> driveContentsCallback = new
+            ResultCallback<DriveContentsResult>() {
+                @Override
+                public void onResult(DriveContentsResult result) {
+                    if (!result.getStatus().isSuccess()) {
+                        showMessage("Error trying to create new file contents");
+                        return;
+                    }
+                    final DriveContents driveContents = result.getDriveContents();
+
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            OutputStream outputStream = driveContents.getOutputStream();
+                            Writer writer = new OutputStreamWriter(outputStream);
+                            try {
+                                if (ActivityCompat.checkSelfPermission(MainActivity.super.getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MainActivity.super.getApplicationContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                    // TODO: Consider calling
+                                    //    ActivityCompat#requestPermissions
+                                    // here to request the missing permissions, and then overriding
+                                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                    //                                          int[] grantResults)
+                                    // to handle the case where the user grants the permission. See the documentation
+                                    // for ActivityCompat#requestPermissions for more details.
+                                    return;
+                                }
+                                mLastLocation = LocationServices.FusedLocationApi
+                                        .getLastLocation(mGoogleApiClient);
+                                if (mLastLocation != null){
+                                    writer.write("These are the co-ordinates of where your device was last located!!"
+                                            + "\nUse the numbers and search them in google maps for an exact location!"
+                                            + "\n" + mLatitudeLabel + ": " + mLastLocation.getLatitude()
+                                            + "\n" + mLongitudeLabel + ": " +
+                                            mLastLocation.getLongitude());
+                                    writer.close();
+                                }
+                                else {}
+                            } catch (IOException e) {
+                                Log.e(TAG, e.getMessage());
+                            }
+                            MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                                    .setTitle("Location Co-Ordinates from Android Anti-Theft")
+                                    .setMimeType("text/plain")
+                                    .setStarred(true).build();
+
+                            Drive.DriveApi.getRootFolder(getGoogleApiClient())
+                                    .createFile(getGoogleApiClient(), changeSet, driveContents)
+                                    .setResultCallback(fileCallback);
+                        }
+                    }.start();
+                }
+            };
+
+    final private ResultCallback<DriveFolder.DriveFileResult> fileCallback = new
+            ResultCallback<DriveFolder.DriveFileResult>() {
+                @Override
+                public void onResult(DriveFolder.DriveFileResult result) {
+                    if (!result.getStatus().isSuccess()) {
+                        showMessage("Error while trying to create file");
+                        return;
+                    }
+                    showMessage("Created file with content");
+                }
+            };
+
+    final private ResultCallback<DriveContentsResult> driveContentsCallback2 = new
+            ResultCallback<DriveContentsResult>() {
+                @Override
+                public void onResult(DriveContentsResult result2) {
+                    if (!result2.getStatus().isSuccess()) {
+                        showMessage("Error trying to create new file contents");
+                        return;
+                    }
+                    final DriveContents driveContents2 = result2.getDriveContents();
+
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            OutputStream outputStream = driveContents2.getOutputStream();
+                            Writer writer = new OutputStreamWriter(outputStream);
+                            try {
+                                    writer.write("Here are the details of your device!" + "\n" +
+                                            "Device: " + Build.MANUFACTURER.toUpperCase() + " "
+                                            + Build.MODEL
+                                            + "\n" + "SDK Version: " + Build.VERSION.SDK
+                                            + "\n" + "Build Number: " + Build.DISPLAY
+                                    + "\n" + "Hardware Serial Number: " + Build.SERIAL );
+                                    writer.close();
+                            } catch (IOException e) {
+                                Log.e(TAG, e.getMessage());
+                            }
+                            MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                                    .setTitle("Device Details from Android Anti-Theft")
+                                    .setMimeType("text/plain")
+                                    .setStarred(true).build();
+
+                            Drive.DriveApi.getRootFolder(getGoogleApiClient())
+                                    .createFile(getGoogleApiClient(), changeSet, driveContents2)
+                                    .setResultCallback(fileCallback2);
+                        }
+                    }.start();
+                }
+            };
+
+    final private ResultCallback<DriveFolder.DriveFileResult> fileCallback2 = new
+            ResultCallback<DriveFolder.DriveFileResult>() {
+                @Override
+                public void onResult(DriveFolder.DriveFileResult result2) {
+                    if (!result2.getStatus().isSuccess()) {
+                        showMessage("Error while trying to create file");
+                        return;
+                    }
+                    showMessage("Created file with content");
+                }
+            };
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.i(TAG, "Connection suspended");
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult result) {
+        Log.i(TAG, "Connection failed: ConnectionResult.getErrorCode() = " + result.getErrorCode());
+
+    }
+
+
     /**
      * An asynchronous task that handles the Drive API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
@@ -407,8 +596,15 @@ public class MainActivity extends AppCompatActivity
             }
             else if (output.size() == 1 && output.contains("Locate"))
             {
+                Drive.DriveApi.newDriveContents(getGoogleApiClient())
+                        .setResultCallback(driveContentsCallback);
                 Log.d(TAG, String.valueOf(output));
-
+            }
+            else if (output.size() == 1 && output.contains("DeviceDetails"))
+            {
+                Drive.DriveApi.newDriveContents(getGoogleApiClient())
+                        .setResultCallback(driveContentsCallback2);
+                Log.d(TAG, String.valueOf(output));
             }
             else
             {
@@ -469,6 +665,8 @@ public class MainActivity extends AppCompatActivity
 
         return super.onOptionsItemSelected(item);
     }
+
+
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
@@ -565,6 +763,12 @@ public class MainActivity extends AppCompatActivity
         googleMap.setMyLocationEnabled(true);
     }
 
+    public void showMessage(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
 
+    public GoogleApiClient getGoogleApiClient() {
+        return mGoogleApiClient;
+    }
 
 }
