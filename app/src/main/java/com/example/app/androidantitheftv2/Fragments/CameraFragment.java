@@ -37,7 +37,7 @@ public class CameraFragment extends Fragment {
         startActivityForResult(takePictureIntent, actionCode);
     }
 
-    private void handleSmallCameraPhoto(Intent intent) {
+    private void handleCameraPhoto(Intent intent) {
         Bundle extras = intent.getExtras();
         mImageBitmap = (Bitmap) extras.get("data");
         mImageView.setImageBitmap(mImageBitmap);
@@ -82,7 +82,7 @@ public class CameraFragment extends Fragment {
         switch (requestCode) {
             case ACTION_TAKE_PHOTO_S: {
                 if (resultCode == RESULT_OK) {
-                    handleSmallCameraPhoto(data);
+                    handleCameraPhoto(data);
                 }
                 break;
             }
@@ -111,19 +111,8 @@ public class CameraFragment extends Fragment {
         }
     }
 
-    /**
-     * Indicates whether the specified action can be used as an intent. This
-     * method queries the package manager for installed packages that can
-     * respond to an intent with the specified action. If no suitable package is
-     * found, this method returns false.
-     * http://android-developers.blogspot.com/2009/01/can-i-use-this-intent.html
-     *
-     * @param context The application's environment.
-     * @param action The Intent action to check for availability.
-     *
-     * @return True if an Intent with the specified action can be sent and
-     *         responded to, false otherwise.
-     */
+
+
     public static boolean isIntentAvailable(Context context, String action) {
         final PackageManager packageManager = context.getPackageManager();
         final Intent intent = new Intent(action);

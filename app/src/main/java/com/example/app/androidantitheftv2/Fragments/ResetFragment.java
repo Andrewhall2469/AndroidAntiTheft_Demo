@@ -42,7 +42,6 @@ public class ResetFragment extends Fragment implements View.OnClickListener {
         button_reset_device = (Button) v.findViewById(R.id.button_reset_device);
         button_reset_device.setOnClickListener(this);
 
-        // Initialize Device Policy Manager service and our receiver class
         devicePolicyManager = (DevicePolicyManager) super.getActivity().getSystemService(Context.DEVICE_POLICY_SERVICE);
         demoDeviceAdmin = new ComponentName(super.getActivity(), DeviceAdminReceiverActivity.class);
         return v;

@@ -25,7 +25,8 @@ public class DeviceDetails extends Fragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_admin, container, false);
         TextView textView = (TextView)v.findViewById(R.id.manufacturer);
-        textView.setText("Device: " + Build.MANUFACTURER.toUpperCase() + " " + Build.MODEL);
+        textView.setText("Device: " + Build.MANUFACTURER.toUpperCase()
+                + " " + Build.MODEL);
 
         TextView textView2 = (TextView)v.findViewById(R.id.sdk_level);
         textView2.setText("SDK Version: " + Build.VERSION.SDK);
