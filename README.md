@@ -15,7 +15,7 @@ View the Camera & Take a Picture which pulls back to the application
 
 View the details of the device the application is installed on
 
-Lock The Device - UNFINISHED
+Lock The Device
 
 Master Reset The Device 
 
@@ -34,9 +34,9 @@ Lock The Device
 
 Master Reset The Device
 
-Pull Location Co-Ordinates into a file on Google Drive - UNFINISHED
+Pull Location Co-Ordinates into a file on Google Drive
 
-Pull Device Details into a file on Google Drive - UNFINISHED 
+Pull Device Details into a file on Google Drive
 
 Take a Camera Picture an pull it into a file on Google Drive - UNFINISHED
 
@@ -46,8 +46,3 @@ Code In Final Commands in Application for External Web Resource
 
 Clean Up Code
 
-Design
-
-Remove Admin button from home screen make it automatic
-
-Help Page
